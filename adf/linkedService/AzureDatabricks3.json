@@ -1,0 +1,17 @@
+{
+	"name": "AzureDatabricks3",
+	"properties": {
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://adb-7405608256913470.10.azuredatabricks.net",
+			"authentication": "MSI",
+			"workspaceResourceId": "/subscriptions/f58a0b52-ff35-489b-bcf3-00c1db587a88/resourceGroups/RG-Air-Quality-POC_WEU/providers/Microsoft.Databricks/workspaces/adb-Air-Quality-POC_WEU",
+			"credential": {
+				"referenceName": "credential2",
+				"type": "CredentialReference"
+			},
+			"existingClusterId": "0209-213217-l84043w2"
+		}
+	}
+}

@@ -1,0 +1,16 @@
+{
+	"name": "govdataset",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_air_quality",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation"
+			}
+		}
+	}
+}

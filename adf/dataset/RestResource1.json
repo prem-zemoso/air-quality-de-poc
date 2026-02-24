@@ -1,0 +1,28 @@
+{
+	"name": "RestResource1",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "RestService1",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"api_key": {
+				"type": "string",
+				"defaultValue": "579b464db66ec23bdd00000199395760bbac47265adacd1894cd07c0"
+			},
+			"limit": {
+				"type": "string",
+				"defaultValue": "1000"
+			}
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"typeProperties": {
+			"relativeUrl": {
+				"value": "@concat(\n'/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69',\n'?api-key=',dataset().api_key,\n'&format=json',\n'&limit=',dataset().limit\n)",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	}
+}

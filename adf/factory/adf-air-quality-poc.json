@@ -1,0 +1,9 @@
+{
+	"name": "adf-air-quality-poc",
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "7c86becc-e030-45ba-8a46-cb2f6520c953",
+		"tenantId": "98dbee28-314a-4801-8b16-746aed26bd96"
+	}
+}

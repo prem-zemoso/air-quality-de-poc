@@ -1,0 +1,331 @@
+{
+	"name": "pl_air_quality_e2e_test",
+	"properties": {
+		"activities": [
+			{
+				"name": "if_ingestion_mode",
+				"type": "IfCondition",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.ingestion_mode, 'batch')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "nb_simulated_stream",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.01:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 60,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/bronze/02_simulated_streaming",
+								"baseParameters": {
+									"run_date": {
+										"value": "@pipeline().parameters.run_date",
+										"type": "Expression"
+									},
+									"replay_offset_days": {
+										"value": "@pipeline().parameters.replay_offset_days",
+										"type": "Expression"
+									},
+									"raw_path": {
+										"value": "@pipeline().parameters.raw_path",
+										"type": "Expression"
+									},
+									"bronze_path": {
+										"value": "@pipeline().parameters.bronze_path",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureDatabricks1",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "nb_bronze_batch",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.01:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 60,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/bronze/01_bronze_ingestion",
+								"baseParameters": {
+									"run_date": {
+										"value": "@pipeline().parameters.run_date",
+										"type": "Expression"
+									},
+									"raw_path": {
+										"value": "@pipeline().parameters.raw_path",
+										"type": "Expression"
+									},
+									"bronze_path": {
+										"value": "@pipeline().parameters.bronze_path",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureDatabricks1",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "nb_silver_processing",
+				"type": "DatabricksNotebook",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [
+					{
+						"activity": "if_ingestion_mode",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.01:00:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 60,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/silver/03_silver_processing",
+					"baseParameters": {
+						"run_date": {
+							"value": "@pipeline().parameters.run_date",
+							"type": "Expression"
+						},
+						"bronze_path": {
+							"value": "@pipeline().parameters.bronze_path",
+							"type": "Expression"
+						},
+						"silver_path": {
+							"value": "@pipeline().parameters.silver_path",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureDatabricks1",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "nb_data_quality_checks",
+				"type": "DatabricksNotebook",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [
+					{
+						"activity": "nb_silver_processing",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.0:30:00",
+					"retry": 1,
+					"retryIntervalInSeconds": 60,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/data-quality/05_data_quality_checks",
+					"baseParameters": {
+						"bronze_path": {
+							"value": "@pipeline().parameters.bronze_path",
+							"type": "Expression"
+						},
+						"silver_path": {
+							"value": "@pipeline().parameters.silver_path",
+							"type": "Expression"
+						},
+						"gold_fact_path": {
+							"value": "@concat(pipeline().parameters.gold_path, '/fact_air_quality')",
+							"type": "Expression"
+						},
+						"dq_log_path": "abfss://data-quality@adlsairqualitypoc.dfs.core.windows.net/dq_logs"
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureDatabricks1",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "if_dq_passed",
+				"type": "IfCondition",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [
+					{
+						"activity": "nb_data_quality_checks",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('nb_data_quality_checks').output.runOutput, 'PASS')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "fail_dq_failed",
+							"type": "Fail",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"message": "DQ_FAILED",
+								"errorCode": "Data Quality checks failed. Gold processing skipped."
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "nb_gold_processing",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.1:30:00",
+								"retry": 1,
+								"retryIntervalInSeconds": 60,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/gold/04_gold_aggregations",
+								"baseParameters": {
+									"run_date": {
+										"value": "@pipeline().parameters.run_date",
+										"type": "Expression"
+									},
+									"silver_path": {
+										"value": "@pipeline().parameters.silver_path",
+										"type": "Expression"
+									},
+									"gold_path": {
+										"value": "@pipeline().parameters.gold_path",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureDatabricks1",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Copy data1",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "RestSource",
+						"httpRequestTimeout": "00:05:00",
+						"requestInterval": "00.00:00:00.010",
+						"requestMethod": "GET"
+					},
+					"sink": {
+						"type": "JsonSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings",
+							"copyBehavior": "FlattenHierarchy"
+						},
+						"formatSettings": {
+							"type": "JsonWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "RestResource1",
+						"type": "DatasetReference",
+						"parameters": {
+							"api_key": "579b464db66ec23bdd00000199395760bbac47265adacd1894cd07c0",
+							"limit": "1000"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "Json1",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"parameters": {
+			"ingestion_mode": {
+				"type": "string",
+				"defaultValue": "batch"
+			},
+			"replay_offset_days": {
+				"type": "string",
+				"defaultValue": "0"
+			},
+			"raw_path": {
+				"type": "string",
+				"defaultValue": "abfss://raw@adlsairqualitypoc.dfs.core.windows.net/aqi/api/"
+			},
+			"bronze_path": {
+				"type": "string",
+				"defaultValue": "abfss://bronze@adlsairqualitypoc.dfs.core.windows.net/aqi"
+			},
+			"silver_path": {
+				"type": "string",
+				"defaultValue": "abfss://silver@adlsairqualitypoc.dfs.core.windows.net/aqi"
+			},
+			"gold_path": {
+				"type": "string",
+				"defaultValue": "abfss://gold@adlsairqualitypoc.dfs.core.windows.net/aqi"
+			},
+			"run_date": {
+				"type": "string"
+			}
+		},
+		"annotations": []
+	}
+}

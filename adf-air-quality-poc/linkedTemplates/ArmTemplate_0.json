@@ -1,0 +1,1049 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adf-air-quality-poc"
+		},
+		"RestService1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://api.data.gov.in"
+		},
+		"ls_govdata_restapi_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://api.data.gov.in/"
+		},
+		"AzureDatabricks1_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0128-061619-9nkod7rv"
+		},
+		"AzureDatabricks3_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0209-213217-l84043w2"
+		},
+		"ls_adls_air_quality_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://adlsairqualitypoc.dfs.core.windows.net/"
+		},
+		"ls_databricks_air_quality_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0128-061619-9nkod7rv"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/RestService1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('RestService1_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_govdata_restapi')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('ls_govdata_restapi_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/credential1')]",
+			"type": "Microsoft.DataFactory/factories/credentials",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "ManagedIdentity",
+				"typeProperties": {
+					"resourceId": "/subscriptions/f58a0b52-ff35-489b-bcf3-00c1db587a88/resourcegroups/RG-Air-Quality-POC/providers/Microsoft.ManagedIdentity/userAssignedIdentities/user-assigned-adf-air-quality-poc"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/credential2')]",
+			"type": "Microsoft.DataFactory/factories/credentials",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "ManagedIdentity",
+				"typeProperties": {
+					"resourceId": "/subscriptions/f58a0b52-ff35-489b-bcf3-00c1db587a88/resourcegroups/RG-Air-Quality-POC_WEU/providers/Microsoft.ManagedIdentity/userAssignedIdentities/user-assigned-adf-air-quality-poc-WEU"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/RestResource1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "RestService1",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"api_key": {
+						"type": "string",
+						"defaultValue": "579b464db66ec23bdd00000199395760bbac47265adacd1894cd07c0"
+					},
+					"limit": {
+						"type": "string",
+						"defaultValue": "1000"
+					}
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {
+					"relativeUrl": {
+						"value": "@concat(\n'/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69',\n'?api-key=',dataset().api_key,\n'&format=json',\n'&limit=',dataset().limit\n)",
+						"type": "Expression"
+					}
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/RestService1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_govdata_restapi')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_govdata_restapi",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {
+					"relativeUrl": "/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69?api-key=579b464db66ec23bdd00000199395760bbac47265adacd1894cd07c0&format=csv"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_govdata_restapi')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureDatabricks1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-7405616895142530.10.azuredatabricks.net",
+					"authentication": "MSI",
+					"workspaceResourceId": "/subscriptions/f58a0b52-ff35-489b-bcf3-00c1db587a88/resourceGroups/RG-Air-Quality-POC/providers/Microsoft.Databricks/workspaces/adb-Air-Quality-POC",
+					"credential": {
+						"referenceName": "credential1",
+						"type": "CredentialReference"
+					},
+					"existingClusterId": "[parameters('AzureDatabricks1_properties_typeProperties_existingClusterId')]"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/credentials/credential1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureDatabricks2')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-7405608256913470.10.azuredatabricks.net",
+					"authentication": "MSI",
+					"workspaceResourceId": "/subscriptions/f58a0b52-ff35-489b-bcf3-00c1db587a88/resourceGroups/RG-Air-Quality-POC_WEU/providers/Microsoft.Databricks/workspaces/adb-Air-Quality-POC_WEU",
+					"credential": {
+						"referenceName": "credential1",
+						"type": "CredentialReference"
+					},
+					"newClusterNodeType": "Standard_D4ds_v5",
+					"newClusterNumOfWorker": "0",
+					"newClusterSparkEnvVars": {
+						"PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+					},
+					"newClusterVersion": "17.3.x-scala2.13",
+					"clusterOption": "Fixed",
+					"newClusterInitScripts": []
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/credentials/credential1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureDatabricks3')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-7405608256913470.10.azuredatabricks.net",
+					"authentication": "MSI",
+					"workspaceResourceId": "/subscriptions/f58a0b52-ff35-489b-bcf3-00c1db587a88/resourceGroups/RG-Air-Quality-POC_WEU/providers/Microsoft.Databricks/workspaces/adb-Air-Quality-POC_WEU",
+					"credential": {
+						"referenceName": "credential2",
+						"type": "CredentialReference"
+					},
+					"existingClusterId": "[parameters('AzureDatabricks3_properties_typeProperties_existingClusterId')]"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/credentials/credential2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_adls_air_quality')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('ls_adls_air_quality_properties_typeProperties_url')]",
+					"credential": {
+						"referenceName": "credential1",
+						"type": "CredentialReference"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/credentials/credential1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_databricks_air_quality')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-7405616895142530.10.azuredatabricks.net",
+					"authentication": "MSI",
+					"workspaceResourceId": "/subscriptions/f58a0b52-ff35-489b-bcf3-00c1db587a88/resourceGroups/RG-Air-Quality-POC/providers/Microsoft.Databricks/workspaces/adb-Air-Quality-POC",
+					"credential": {
+						"referenceName": "credential1",
+						"type": "CredentialReference"
+					},
+					"existingClusterId": "[parameters('ls_databricks_air_quality_properties_typeProperties_existingClusterId')]"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/credentials/credential1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_air_quality",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "aqi.csv",
+						"folderPath": "aqi/latest",
+						"fileSystem": "raw"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_air_quality')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Json1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_air_quality",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@concat('aqi_', formatDateTime(utcNow(),'yyyyMMdd_HHmmss'), '.json')",
+							"type": "Expression"
+						},
+						"folderPath": "aqi/api",
+						"fileSystem": "raw"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_air_quality')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_adls_gold')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_air_quality",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "aqi",
+						"fileSystem": "gold"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_air_quality')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_adls_raw')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_air_quality",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "aqi",
+						"fileSystem": "raw"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_air_quality')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_adls_silver')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_air_quality",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "aqi",
+						"fileSystem": "silver"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_air_quality')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_alds_bronze')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_air_quality",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "aqi",
+						"fileSystem": "bronze"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_air_quality')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/govdataset')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_air_quality",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_air_quality')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/air_quality_e2e')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "nb_silver_processing",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "nb_bronze_api",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.01:00:00",
+							"retry": 2,
+							"retryIntervalInSeconds": 60,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/silver/03_silver_processing",
+							"baseParameters": {
+								"bronze_path": {
+									"value": "@pipeline().parameters.bronze_path",
+									"type": "Expression"
+								},
+								"silver_path": {
+									"value": "@pipeline().parameters.silver_path",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "AzureDatabricks1",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "nb_data_quality_checks",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "nb_gold_processing",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.0:30:00",
+							"retry": 1,
+							"retryIntervalInSeconds": 60,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/data-quality/05_data_quality_checks",
+							"baseParameters": {
+								"bronze_path": {
+									"value": "@pipeline().parameters.bronze_path",
+									"type": "Expression"
+								},
+								"silver_path": {
+									"value": "@pipeline().parameters.silver_path",
+									"type": "Expression"
+								},
+								"gold_fact_path": {
+									"value": "@concat(pipeline().parameters.gold_path, '/fact_air_quality')",
+									"type": "Expression"
+								},
+								"dq_log_path": {
+									"value": "@pipeline().parameters.dataquality_path",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "AzureDatabricks1",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "if_dq_passed",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "nb_data_quality_checks",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(activity('nb_data_quality_checks').output.runOutput, 'PASS')",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "fail_dq_failed",
+									"type": "Fail",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"message": "DQ_FAILED",
+										"errorCode": "Data Quality checks failed. Gold processing skipped."
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Copy data1",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:05:00",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "GET"
+							},
+							"sink": {
+								"type": "JsonSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings",
+									"copyBehavior": "FlattenHierarchy"
+								},
+								"formatSettings": {
+									"type": "JsonWriteSettings"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "RestResource1",
+								"type": "DatasetReference",
+								"parameters": {
+									"api_key": "579b464db66ec23bdd00000199395760bbac47265adacd1894cd07c0",
+									"limit": "1000"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "Json1",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "nb_bronze_api",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Copy data1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.01:00:00",
+							"retry": 2,
+							"retryIntervalInSeconds": 60,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/bronze/01_bronze_ingestion",
+							"baseParameters": {
+								"raw_path": {
+									"value": "@pipeline().parameters.raw_path",
+									"type": "Expression"
+								},
+								"bronze_path": {
+									"value": "@pipeline().parameters.bronze_path",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "AzureDatabricks1",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "nb_gold_processing",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "nb_silver_processing",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.1:30:00",
+							"retry": 1,
+							"retryIntervalInSeconds": 60,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/gold/04_gold_aggregations",
+							"baseParameters": {
+								"silver_path": {
+									"value": "@pipeline().parameters.silver_path",
+									"type": "Expression"
+								},
+								"gold_path": {
+									"value": "@pipeline().parameters.gold_path",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "AzureDatabricks1",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"raw_path": {
+						"type": "string",
+						"defaultValue": "abfss://raw@adlsairqualitypoc.dfs.core.windows.net/aqi/api/"
+					},
+					"bronze_path": {
+						"type": "string",
+						"defaultValue": "abfss://bronze@adlsairqualitypoc.dfs.core.windows.net/aqi"
+					},
+					"silver_path": {
+						"type": "string",
+						"defaultValue": "abfss://silver@adlsairqualitypoc.dfs.core.windows.net/aqi"
+					},
+					"gold_path": {
+						"type": "string",
+						"defaultValue": "abfss://gold@adlsairqualitypoc.dfs.core.windows.net/aqi"
+					},
+					"dataquality_path": {
+						"type": "string",
+						"defaultValue": "abfss://data-quality@adlsairqualitypoc.dfs.core.windows.net/aqi"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDatabricks1')]",
+				"[concat(variables('factoryId'), '/datasets/RestResource1')]",
+				"[concat(variables('factoryId'), '/datasets/Json1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_air_quality_e2e_test')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "if_ingestion_mode",
+						"type": "IfCondition",
+						"state": "Inactive",
+						"onInactiveMarkAs": "Succeeded",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(pipeline().parameters.ingestion_mode, 'batch')",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "nb_simulated_stream",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.01:00:00",
+										"retry": 2,
+										"retryIntervalInSeconds": 60,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/bronze/02_simulated_streaming",
+										"baseParameters": {
+											"run_date": {
+												"value": "@pipeline().parameters.run_date",
+												"type": "Expression"
+											},
+											"replay_offset_days": {
+												"value": "@pipeline().parameters.replay_offset_days",
+												"type": "Expression"
+											},
+											"raw_path": {
+												"value": "@pipeline().parameters.raw_path",
+												"type": "Expression"
+											},
+											"bronze_path": {
+												"value": "@pipeline().parameters.bronze_path",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "AzureDatabricks1",
+										"type": "LinkedServiceReference"
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "nb_bronze_batch",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.01:00:00",
+										"retry": 2,
+										"retryIntervalInSeconds": 60,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/bronze/01_bronze_ingestion",
+										"baseParameters": {
+											"run_date": {
+												"value": "@pipeline().parameters.run_date",
+												"type": "Expression"
+											},
+											"raw_path": {
+												"value": "@pipeline().parameters.raw_path",
+												"type": "Expression"
+											},
+											"bronze_path": {
+												"value": "@pipeline().parameters.bronze_path",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "AzureDatabricks1",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "nb_silver_processing",
+						"type": "DatabricksNotebook",
+						"state": "Inactive",
+						"onInactiveMarkAs": "Succeeded",
+						"dependsOn": [
+							{
+								"activity": "if_ingestion_mode",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.01:00:00",
+							"retry": 2,
+							"retryIntervalInSeconds": 60,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/silver/03_silver_processing",
+							"baseParameters": {
+								"run_date": {
+									"value": "@pipeline().parameters.run_date",
+									"type": "Expression"
+								},
+								"bronze_path": {
+									"value": "@pipeline().parameters.bronze_path",
+									"type": "Expression"
+								},
+								"silver_path": {
+									"value": "@pipeline().parameters.silver_path",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "AzureDatabricks1",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "nb_data_quality_checks",
+						"type": "DatabricksNotebook",
+						"state": "Inactive",
+						"onInactiveMarkAs": "Succeeded",
+						"dependsOn": [
+							{
+								"activity": "nb_silver_processing",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.0:30:00",
+							"retry": 1,
+							"retryIntervalInSeconds": 60,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/data-quality/05_data_quality_checks",
+							"baseParameters": {
+								"bronze_path": {
+									"value": "@pipeline().parameters.bronze_path",
+									"type": "Expression"
+								},
+								"silver_path": {
+									"value": "@pipeline().parameters.silver_path",
+									"type": "Expression"
+								},
+								"gold_fact_path": {
+									"value": "@concat(pipeline().parameters.gold_path, '/fact_air_quality')",
+									"type": "Expression"
+								},
+								"dq_log_path": "abfss://data-quality@adlsairqualitypoc.dfs.core.windows.net/dq_logs"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "AzureDatabricks1",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "if_dq_passed",
+						"type": "IfCondition",
+						"state": "Inactive",
+						"onInactiveMarkAs": "Succeeded",
+						"dependsOn": [
+							{
+								"activity": "nb_data_quality_checks",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(activity('nb_data_quality_checks').output.runOutput, 'PASS')",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "fail_dq_failed",
+									"type": "Fail",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"message": "DQ_FAILED",
+										"errorCode": "Data Quality checks failed. Gold processing skipped."
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "nb_gold_processing",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.1:30:00",
+										"retry": 1,
+										"retryIntervalInSeconds": 60,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/Repos/premkumarnunna007@gmail.com/air-quality-de-poc/processing/gold/04_gold_aggregations",
+										"baseParameters": {
+											"run_date": {
+												"value": "@pipeline().parameters.run_date",
+												"type": "Expression"
+											},
+											"silver_path": {
+												"value": "@pipeline().parameters.silver_path",
+												"type": "Expression"
+											},
+											"gold_path": {
+												"value": "@pipeline().parameters.gold_path",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "AzureDatabricks1",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Copy data1",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "RestSource",
+								"httpRequestTimeout": "00:05:00",
+								"requestInterval": "00.00:00:00.010",
+								"requestMethod": "GET"
+							},
+							"sink": {
+								"type": "JsonSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings",
+									"copyBehavior": "FlattenHierarchy"
+								},
+								"formatSettings": {
+									"type": "JsonWriteSettings"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "RestResource1",
+								"type": "DatasetReference",
+								"parameters": {
+									"api_key": "579b464db66ec23bdd00000199395760bbac47265adacd1894cd07c0",
+									"limit": "1000"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "Json1",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"ingestion_mode": {
+						"type": "string",
+						"defaultValue": "batch"
+					},
+					"replay_offset_days": {
+						"type": "string",
+						"defaultValue": "0"
+					},
+					"raw_path": {
+						"type": "string",
+						"defaultValue": "abfss://raw@adlsairqualitypoc.dfs.core.windows.net/aqi/api/"
+					},
+					"bronze_path": {
+						"type": "string",
+						"defaultValue": "abfss://bronze@adlsairqualitypoc.dfs.core.windows.net/aqi"
+					},
+					"silver_path": {
+						"type": "string",
+						"defaultValue": "abfss://silver@adlsairqualitypoc.dfs.core.windows.net/aqi"
+					},
+					"gold_path": {
+						"type": "string",
+						"defaultValue": "abfss://gold@adlsairqualitypoc.dfs.core.windows.net/aqi"
+					},
+					"run_date": {
+						"type": "string"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDatabricks1')]",
+				"[concat(variables('factoryId'), '/datasets/RestResource1')]",
+				"[concat(variables('factoryId'), '/datasets/Json1')]"
+			]
+		}
+	]
+}

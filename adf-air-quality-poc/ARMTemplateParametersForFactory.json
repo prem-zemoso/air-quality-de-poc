@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-air-quality-poc"
+		},
+		"AzureDatabricks1_properties_typeProperties_existingClusterId": {
+			"value": "0128-061619-9nkod7rv"
+		},
+		"AzureDatabricks3_properties_typeProperties_existingClusterId": {
+			"value": "0209-213217-l84043w2"
+		},
+		"RestService1_properties_typeProperties_url": {
+			"value": "https://api.data.gov.in"
+		},
+		"ls_adls_air_quality_properties_typeProperties_url": {
+			"value": "https://adlsairqualitypoc.dfs.core.windows.net/"
+		},
+		"ls_databricks_air_quality_properties_typeProperties_existingClusterId": {
+			"value": "0128-061619-9nkod7rv"
+		},
+		"ls_govdata_restapi_properties_typeProperties_url": {
+			"value": "https://api.data.gov.in/"
+		}
+	}
+}

@@ -1,0 +1,15 @@
+{
+	"name": "ds_govdata_restapi",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_govdata_restapi",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"typeProperties": {
+			"relativeUrl": "/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69?api-key=579b464db66ec23bdd00000199395760bbac47265adacd1894cd07c0&format=csv"
+		},
+		"schema": []
+	}
+}

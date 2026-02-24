@@ -1,0 +1,84 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adf-air-quality-poc"
+		},
+		"AzureDatabricks1_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0128-061619-9nkod7rv"
+		},
+		"AzureDatabricks3_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0209-213217-l84043w2"
+		},
+		"RestService1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://api.data.gov.in"
+		},
+		"ls_adls_air_quality_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://adlsairqualitypoc.dfs.core.windows.net/"
+		},
+		"ls_databricks_air_quality_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0128-061619-9nkod7rv"
+		},
+		"ls_govdata_restapi_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://api.data.gov.in/"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "adf-air-quality-poc_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"RestService1_properties_typeProperties_url": {
+						"value": "[parameters('RestService1_properties_typeProperties_url')]"
+					},
+					"ls_govdata_restapi_properties_typeProperties_url": {
+						"value": "[parameters('ls_govdata_restapi_properties_typeProperties_url')]"
+					},
+					"AzureDatabricks1_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('AzureDatabricks1_properties_typeProperties_existingClusterId')]"
+					},
+					"AzureDatabricks3_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('AzureDatabricks3_properties_typeProperties_existingClusterId')]"
+					},
+					"ls_adls_air_quality_properties_typeProperties_url": {
+						"value": "[parameters('ls_adls_air_quality_properties_typeProperties_url')]"
+					},
+					"ls_databricks_air_quality_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('ls_databricks_air_quality_properties_typeProperties_existingClusterId')]"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
